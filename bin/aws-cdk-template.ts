@@ -6,6 +6,8 @@ import { VpcStack } from '../lib/vpc-stack';
 import { SsmStack } from '../lib/ssm-stack';
 import { Ec2Stack } from '../lib/ec2-stack';
 
+import { CdkPipelineStack } from '../lib/cdk-pipeline-stack';
+
 
 const app = new cdk.App();
 
@@ -15,7 +17,9 @@ const env = {
   region: process.env.CDK_DEPLOY_REGION || process.env.CDK_DEFAULT_REGION
 }
 
-new AwsCdkTemplateStack(app, 'AwsCdkTemplateStack', {});
+const aws_cdk_template_stack = new AwsCdkTemplateStack(app, 'AwsCdkTemplateStack', {
+  env: env,
+});
 
 const vpc_stack = new VpcStack(app, prj_name+'-VpcStack', {
   prj_name: prj_name,
@@ -34,3 +38,10 @@ const ec2_stack = new Ec2Stack(app, prj_name+'-Ec2Stack', {
   vpc: vpc_stack.vpc,
   ssm_iam_role: ssm_stack.iam_role,
 });
+
+const cdk_pipeline_stack = new CdkPipelineStack(app, prj_name+'-CdkPipelineStack', { // AwsCdkTemplate-CdkPipelineStack
+  prj_name: prj_name,
+  env: env,
+});
+
+app.synth()

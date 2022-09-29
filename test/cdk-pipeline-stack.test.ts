@@ -2,8 +2,10 @@ import * as cdk from 'aws-cdk-lib';
 import { Template } from 'aws-cdk-lib/assertions';
 import { VpcStack } from '../lib/vpc-stack';
 
+import { CdkPipelineStack } from '../lib/cdk-pipeline-stack';
 
-test('VpcStack', () => {
+
+test('CdkPipelineStack', () => {
   
   const app = new cdk.App();
 
@@ -14,12 +16,12 @@ test('VpcStack', () => {
   }
 
   // WHEN
-  const vpc_stack = new VpcStack(app, prj_name+'-VpcStack', {
+  const cdk_pipeline_stack = new CdkPipelineStack(app, prj_name+'-CdkPipelineStack', { // AwsCdkTemplate-CdkPipelineStack
     prj_name: prj_name,
     env: env,
   });
 
   // THEN
-  expect(Template.fromStack(vpc_stack).toJSON()).toMatchSnapshot();
+  expect(Template.fromStack(cdk_pipeline_stack).toJSON()).toMatchSnapshot();
 
 });

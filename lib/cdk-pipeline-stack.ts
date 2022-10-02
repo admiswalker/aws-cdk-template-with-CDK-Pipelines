@@ -1,100 +1,49 @@
 import { Stack, StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
-import * as ec2 from 'aws-cdk-lib/aws-ec2';
-//import { InstanceType, NatInstanceImage, NatProvider } from 'aws-cdk-lib/aws-ec2';
-//import { CodePipeline } from 'aws-cdk-lib/aws-events-targets';
-//import { CdkPipeline, SimpleSynthAction } from 'aws-cdk-lib/pipelines';
-//import * as CodePipeline from 'aws-cdk-lib/aws-codepipeline';
-//import * as CodePipelineActions from 'aws-cdk-lib/aws-codepipeline-actions';
+import * as codecommit from 'aws-cdk-lib/aws-codecommit';
 import {
+    CodeBuildStep,
     CodePipeline,
     CodePipelineSource,
     ShellStep,
 } from "aws-cdk-lib/pipelines";
+import { CdkPipelineStageStack } from './cdk-pipeline-stage-stack';
+
 
 interface CdkPipelineStackProps extends StackProps {
     prj_name: string;
 }
 export class CdkPipelineStack extends Stack {
-  public readonly vpc: ec2.Vpc;
-
   constructor(scope: Construct, id: string, props: CdkPipelineStackProps) {
     super(scope, id, props);
 
-    const pipeline = new CodePipeline(this, props.prj_name+'-'+this.constructor.name+'-cdk_pipelines_for_deploy', {
-        synth: new ShellStep('Synth', {
-            input: CodePipelineSource.connection(
-                'OWNER/REPO',
-                'main',
-                {
-                    connectionArn: 'arn:aws:codecommit:ap-northeast-1:572544462781:aws-cdk-template-with-CDK-Pipelines',
-                }
-            ),
-            commands: [
-                'npx npm ci',
-                'npx npm run build',
-                'npx cdk synth',
-            ],
-            primaryOutputDirectory: './cdk.out',
-        }),
-        //crossAccountKeys: true,
-    });
-    /*
-    const pipeline = new CodePipeline.Pipeline(this, props.prj_name+'-'+this.constructor.name+'-cdk_pipelines_for_deploy', {
-        pipelineName: `${props.prj_name}-pipeline`,
-        stages: [
-            {
-                stageName: 'source',
-                actions: [],
-            },
-            {
-                stageName: 'build',
-                actions: [],
-            },
-            {
-                stageName: 'deploy',
-                actions: [],
-            },
-        ],
-    });
-    */
-        /*
-    const pipeline = new aws_codepipeline.Pipeline(this, props.prj_name+'-'+this.constructor.name+'-cdk_pipelines_for_deploy', {
-        pipelineName: props.prj_name+'-'+this.constructor.name+'-cdk_pipelines_for_deploy',
-        
+    // const repo = new codecommit.Repository(this, 'aws-cdk-template-with-CDK-Pipelines', { // Creates a new, empty repository
+    //     repositoryName: 'aws-cdk-template-with-CDK-Pipelines',
+    // });
+    const repo = codecommit.Repository.fromRepositoryName(this, 'repo', 'aws-cdk-template-with-CDK-Pipelines'); // Use existing repository
 
-        stages: [
-            {
-                stageName: 'Development',
-            }
-        ],
+    const pipeline = new CodePipeline(this, props.prj_name+'-'+this.constructor.name+'-aws-cdk-template-with-CDK-Pipelines',{
+        pipelineName: props.prj_name+'-'+this.constructor.name+'-aws-cdk-template-with-CDK-Pipelines',
+        synth: new CodeBuildStep('SynthStep', {
+            input: CodePipelineSource.codeCommit(repo, 'main'),
+            installCommands: [
+                'npm install -g aws-cdk'
+            ],
+            commands: [
+                'npm ci',
+                'npm run build',
+                'npx cdk synth'
+            ],
+        }),
     });
-    */
-    /*
-    this.vpc = new ec2.Vpc(this, props.prj_name+'-'+this.constructor.name+'-vpc_for_ec2_and_ssm', {
-      cidr: '10.0.0.0/16',
-      natGateways: 1,
-      natGatewayProvider: ec2.NatProvider.instance({
-        instanceType: new InstanceType('t3.nano'),
-        machineImage: new NatInstanceImage(),
-      }),
-      subnetConfiguration: [
-        {
-          name: 'Public',
-          subnetType: ec2.SubnetType.PUBLIC,
-          cidrMask: 27,
-        },
-        {
-          name: 'Private',
-          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
-          cidrMask: 27,
-        },
-      ],
+
+    const deploy_stack = new CdkPipelineStageStack(this, props.prj_name+'Deploy', {
+        prj_name: props.prj_name,
+        env: props.env,
     });
-    */
+    const deployStage = pipeline.addStage(deploy_stack);
   }
 }
-
 
 
 // memo
@@ -104,3 +53,5 @@ export class CdkPipelineStack extends Stack {
 //   https://zenn.dev/pirosikick/scraps/a3d843cc54fcbf
 // - class CodeCommitSourceAction
 //   https://docs.aws.amazon.com/cdk/api/v1/docs/@aws-cdk_aws-codepipeline-actions.CodeCommitSourceAction.html
+// - CREATE NEW PIPELINE - TypeScript Workshop
+//   https://cdkworkshop.com/20-typescript/70-advanced-topics/200-pipelines/3000-new-pipeline.html

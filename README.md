@@ -41,6 +41,11 @@ npx cdk deploy --all --require-approval never
 npx cdk destroy --all --force
 ```
 
+#### パイプラインのデプロイ
+```bash
+npx cdk deploy AwsCdkTemplate-CdkPipelineStack
+```
+
 ## 付録
 
 ### codecommit
